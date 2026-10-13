@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Do not deploy this placeholder unchanged. npm run iis:config reads PORT from .env. -->
+<configuration><system.webServer>
+ <rewrite><rules><rule name="MONJA assets proxy" stopProcessing="true"><match url="(.*)"/><serverVariables><set name="HTTP_X_FORWARDED_PROTO" value="https"/><set name="HTTP_X_FORWARDED_HOST" value="{HTTP_HOST}"/></serverVariables><action type="Rewrite" url="http://127.0.0.1:__UPSTREAM_PORT__/{R:1}"/></rule></rules></rewrite>
+ <security><requestFiltering><requestLimits maxAllowedContentLength="12582912"/></requestFiltering></security>
+</system.webServer></configuration>

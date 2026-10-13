@@ -1,0 +1,17 @@
+import 'dotenv/config';
+export type Config=ReturnType<typeof loadConfig>;
+function boolean(value:string|undefined,fallback:boolean){if(value===undefined||value==='')return fallback;if(!['true','false'].includes(value))throw Error('Boolean configuration must be true or false');return value==='true';}
+function integer(v:string|undefined,fallback:number,min:number,max:number){const n=v===undefined||v===''?fallback:Number(v);if(!Number.isInteger(n)||n<min||n>max)throw Error('Invalid numeric configuration');return n;}
+export function loadConfig(e:NodeJS.ProcessEnv=process.env){
+ const database=(e.DB_NAME??'').trim();if(!database||database.toLowerCase()==='accounting'||!/^[-a-zA-Z0-9_]{1,80}$/.test(database))throw Error('DB_NAME must name the dedicated asset database; accounting is forbidden');
+ new Intl.DateTimeFormat('ja-JP',{timeZone:e.APP_TIMEZONE??'Asia/Tokyo'});const production=e.NODE_ENV==='production';const secret=e.SESSION_SECRET??'';if(secret.length<32||/CHANGE_|sample|password/i.test(secret))throw Error('SESSION_SECRET must be a random secret of at least 32 characters');if(!e.DB_PASSWORD||/CHANGE_ME/i.test(e.DB_PASSWORD))throw Error('Set DB_PASSWORD');
+ const host=e.HOST??'127.0.0.1',port=integer(e.PORT,NaN,1,65535);if(!Number.isFinite(port))throw Error('Set PORT');
+ let basePath=e.BASE_PATH??'/';if(!basePath.startsWith('/')||basePath.includes('..')||/[?#\\]/.test(basePath))throw Error('Invalid BASE_PATH');basePath=basePath==='/'?'/':'/'+basePath.split('/').filter(Boolean).join('/')+'/';
+ const publicURL=new URL(e.PUBLIC_BASE_URL??'');if(!['http:','https:'].includes(publicURL.protocol)||publicURL.username||publicURL.password||publicURL.search||publicURL.hash)throw Error('Invalid PUBLIC_BASE_URL');
+ const secure=boolean(e.COOKIE_SECURE,false),trustProxy=boolean(e.TRUST_PROXY,false);if(publicURL.protocol==='https:'&&!secure)throw Error('HTTPS requires COOKIE_SECURE=true');if(production&&!secure)throw Error('Production requires HTTPS and COOKIE_SECURE=true');
+ if(e.DB_INSTANCE&&e.DB_PORT)throw Error('Configure either DB_INSTANCE or DB_PORT');const proxyAddresses=(e.TRUSTED_PROXY_ADDRESSES??'loopback').split(',').map(s=>s.trim()).filter(Boolean);if(trustProxy&&!proxyAddresses.length)throw Error('Specify trusted proxy addresses');
+ return {production,host,port,name:e.APP_NAME??'もんじゃ固定資産管理',nameEN:e.APP_NAME_EN??'MONJA FIXED ASSET SYSTEM',timezone:e.APP_TIMEZONE??'Asia/Tokyo',publicURL:publicURL.toString().replace(/\/$/,''),origin:publicURL.origin,basePath,trustProxy,proxyAddresses,secure,secret,idleMinutes:integer(e.SESSION_IDLE_TIMEOUT_MINUTES,30,1,1440),absoluteHours:integer(e.SESSION_ABSOLUTE_TIMEOUT_HOURS,8,1,168),sitesPepper:e.SITES_AUTH_PEPPER??'',initialLogin:e.INITIAL_ADMIN_LOGIN_ID??'admin1',database,db:{server:e.DB_SERVER??'localhost',port:e.DB_INSTANCE?undefined:integer(e.DB_PORT,1433,1,65535),database,user:e.DB_USER??'',password:e.DB_PASSWORD,connectionTimeout:integer(e.DB_CONNECTION_TIMEOUT_MS,15000,100,600000),requestTimeout:integer(e.DB_REQUEST_TIMEOUT_MS,30000,100,600000),pool:{min:integer(e.DB_POOL_MIN,0,0,100),max:integer(e.DB_POOL_MAX,10,1,100),idleTimeoutMillis:30000},options:{encrypt:boolean(e.DB_ENCRYPT,true),trustServerCertificate:boolean(e.DB_TRUST_SERVER_CERTIFICATE,false),instanceName:e.DB_INSTANCE||undefined,abortTransactionOnError:true}}};
+}
+let config:Config|undefined;
+export function settings(){return config??=loadConfig();}
+export function setTestConfig(c:Config){config=c;}

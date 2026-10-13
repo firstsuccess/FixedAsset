@@ -1,0 +1,2 @@
+<!-- Server-level ARR example only. Do not overwrite applicationHost.config. An IIS operator applies it later. -->
+<system.webServer><proxy enabled="true" preserveHostHeader="true" /></system.webServer>

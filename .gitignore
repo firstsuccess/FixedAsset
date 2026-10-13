@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.env
+.env.*
+!.env.sample
+backups/
+*.bak
+*.log
+npm-debug.log*
+*.sqlite
+*.sqlite3

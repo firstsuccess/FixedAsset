@@ -1,0 +1,1144 @@
+{
+  "global_counters": {
+    "columns": [
+      "key",
+      "value"
+    ],
+    "foreignKeys": [],
+    "types": {
+      "key": "text",
+      "value": "integer"
+    }
+  },
+  "companies": {
+    "columns": [
+      "id",
+      "code",
+      "name",
+      "kind",
+      "created_at",
+      "version",
+      "fiscal_end_month"
+    ],
+    "foreignKeys": [],
+    "types": {
+      "id": "text",
+      "code": "text",
+      "name": "text",
+      "kind": "text",
+      "created_at": "text",
+      "version": "integer",
+      "fiscal_end_month": "integer"
+    }
+  },
+  "users": {
+    "columns": [
+      "id",
+      "identity_id",
+      "email",
+      "display_name",
+      "role",
+      "created_at",
+      "last_login",
+      "active"
+    ],
+    "foreignKeys": [],
+    "types": {
+      "id": "text",
+      "identity_id": "text",
+      "email": "text",
+      "display_name": "text",
+      "role": "text",
+      "created_at": "text",
+      "last_login": "text",
+      "active": "integer"
+    }
+  },
+  "roles": {
+    "columns": [
+      "id",
+      "name",
+      "description"
+    ],
+    "foreignKeys": [],
+    "types": {
+      "id": "text",
+      "name": "text",
+      "description": "text"
+    }
+  },
+  "user_company_permissions": {
+    "columns": [
+      "id",
+      "user_id",
+      "company_id",
+      "role"
+    ],
+    "foreignKeys": [
+      {
+        "column": "user_id",
+        "table": "users"
+      },
+      {
+        "column": "company_id",
+        "table": "companies"
+      }
+    ],
+    "types": {
+      "id": "text",
+      "user_id": "text",
+      "company_id": "text",
+      "role": "text"
+    }
+  },
+  "company_settings": {
+    "columns": [
+      "id",
+      "company_id",
+      "effective_from",
+      "settings_json",
+      "created_by",
+      "created_at",
+      "version"
+    ],
+    "foreignKeys": [
+      {
+        "column": "company_id",
+        "table": "companies"
+      }
+    ],
+    "types": {
+      "id": "text",
+      "company_id": "text",
+      "effective_from": "text",
+      "settings_json": "text",
+      "created_by": "text",
+      "created_at": "text",
+      "version": "integer"
+    }
+  },
+  "accounting_periods": {
+    "columns": [
+      "id",
+      "company_id",
+      "start_date",
+      "end_date",
+      "status"
+    ],
+    "foreignKeys": [
+      {
+        "column": "company_id",
+        "table": "companies"
+      }
+    ],
+    "types": {
+      "id": "text",
+      "company_id": "text",
+      "start_date": "text",
+      "end_date": "text",
+      "status": "text"
+    }
+  },
+  "asset_categories": {
+    "columns": [
+      "id",
+      "code",
+      "name",
+      "default_method",
+      "account_code",
+      "depreciable",
+      "intangible"
+    ],
+    "foreignKeys": [],
+    "types": {
+      "id": "text",
+      "code": "text",
+      "name": "text",
+      "default_method": "text",
+      "account_code": "text",
+      "depreciable": "integer",
+      "intangible": "integer"
+    }
+  },
+  "departments": {
+    "columns": [
+      "id",
+      "company_id",
+      "code",
+      "name",
+      "version"
+    ],
+    "foreignKeys": [
+      {
+        "column": "company_id",
+        "table": "companies"
+      }
+    ],
+    "types": {
+      "id": "text",
+      "company_id": "text",
+      "code": "text",
+      "name": "text",
+      "version": "integer"
+    }
+  },
+  "asset_locations": {
+    "columns": [
+      "id",
+      "company_id",
+      "code",
+      "name",
+      "version"
+    ],
+    "foreignKeys": [
+      {
+        "column": "company_id",
+        "table": "companies"
+      }
+    ],
+    "types": {
+      "id": "text",
+      "company_id": "text",
+      "code": "text",
+      "name": "text",
+      "version": "integer"
+    }
+  },
+  "account_codes": {
+    "columns": [
+      "id",
+      "company_id",
+      "code",
+      "name",
+      "version"
+    ],
+    "foreignKeys": [
+      {
+        "column": "company_id",
+        "table": "companies"
+      }
+    ],
+    "types": {
+      "id": "text",
+      "company_id": "text",
+      "code": "text",
+      "name": "text",
+      "version": "integer"
+    }
+  },
+  "vendors": {
+    "columns": [
+      "id",
+      "company_id",
+      "code",
+      "name",
+      "version"
+    ],
+    "foreignKeys": [
+      {
+        "column": "company_id",
+        "table": "companies"
+      }
+    ],
+    "types": {
+      "id": "text",
+      "company_id": "text",
+      "code": "text",
+      "name": "text",
+      "version": "integer"
+    }
+  },
+  "assets": {
+    "columns": [
+      "id",
+      "company_id",
+      "number",
+      "name",
+      "category",
+      "acquisition_date",
+      "service_date",
+      "status",
+      "notes",
+      "supplier",
+      "manufacturer",
+      "model",
+      "serial",
+      "manager",
+      "created_by",
+      "created_at",
+      "updated_by",
+      "updated_at",
+      "department_id",
+      "location_id",
+      "cost",
+      "tax",
+      "ancillary",
+      "version"
+    ],
+    "foreignKeys": [
+      {
+        "column": "company_id",
+        "table": "companies"
+      },
+      {
+        "column": "department_id",
+        "table": "departments"
+      },
+      {
+        "column": "location_id",
+        "table": "asset_locations"
+      }
+    ],
+    "types": {
+      "id": "text",
+      "company_id": "text",
+      "number": "text",
+      "name": "text",
+      "category": "text",
+      "acquisition_date": "text",
+      "service_date": "text",
+      "status": "text",
+      "notes": "text",
+      "supplier": "text",
+      "manufacturer": "text",
+      "model": "text",
+      "serial": "text",
+      "manager": "text",
+      "created_by": "text",
+      "created_at": "text",
+      "updated_by": "text",
+      "updated_at": "text",
+      "department_id": "text",
+      "location_id": "text",
+      "cost": "integer",
+      "tax": "integer",
+      "ancillary": "integer",
+      "version": "integer"
+    }
+  },
+  "asset_books": {
+    "columns": [
+      "id",
+      "asset_id",
+      "kind",
+      "method",
+      "rate",
+      "guarantee",
+      "revised_rate",
+      "account",
+      "expense_account",
+      "accumulated_account",
+      "rounding",
+      "start_month",
+      "legacy_tail_start",
+      "legacy_rule_start",
+      "legacy_intangible",
+      "cost",
+      "life",
+      "residual",
+      "version"
+    ],
+    "foreignKeys": [
+      {
+        "column": "asset_id",
+        "table": "assets"
+      }
+    ],
+    "types": {
+      "id": "text",
+      "asset_id": "text",
+      "kind": "text",
+      "method": "text",
+      "rate": "text",
+      "guarantee": "text",
+      "revised_rate": "text",
+      "account": "text",
+      "expense_account": "text",
+      "accumulated_account": "text",
+      "rounding": "text",
+      "start_month": "text",
+      "legacy_tail_start": "text",
+      "legacy_rule_start": "text",
+      "legacy_intangible": "integer",
+      "cost": "integer",
+      "life": "integer",
+      "residual": "integer",
+      "version": "integer"
+    }
+  },
+  "asset_opening_balances": {
+    "columns": [
+      "id",
+      "asset_book_id",
+      "as_of",
+      "accumulated",
+      "impairment",
+      "balance",
+      "revised_basis"
+    ],
+    "foreignKeys": [
+      {
+        "column": "asset_book_id",
+        "table": "asset_books"
+      }
+    ],
+    "types": {
+      "id": "text",
+      "asset_book_id": "text",
+      "as_of": "text",
+      "accumulated": "integer",
+      "impairment": "integer",
+      "balance": "integer",
+      "revised_basis": "integer"
+    }
+  },
+  "useful_life_master": {
+    "columns": [
+      "id",
+      "category",
+      "structure",
+      "purpose",
+      "detail",
+      "valid_from",
+      "valid_to",
+      "source_url",
+      "legal_basis",
+      "master_version",
+      "life"
+    ],
+    "foreignKeys": [],
+    "types": {
+      "id": "text",
+      "category": "text",
+      "structure": "text",
+      "purpose": "text",
+      "detail": "text",
+      "valid_from": "text",
+      "valid_to": "text",
+      "source_url": "text",
+      "legal_basis": "text",
+      "master_version": "text",
+      "life": "integer"
+    }
+  },
+  "depreciation_methods": {
+    "columns": [
+      "id",
+      "code",
+      "name",
+      "valid_from",
+      "valid_to",
+      "source_url",
+      "enabled"
+    ],
+    "foreignKeys": [],
+    "types": {
+      "id": "text",
+      "code": "text",
+      "name": "text",
+      "valid_from": "text",
+      "valid_to": "text",
+      "source_url": "text",
+      "enabled": "integer"
+    }
+  },
+  "depreciation_rate_master": {
+    "columns": [
+      "id",
+      "method",
+      "rate",
+      "guarantee",
+      "revised_rate",
+      "valid_from",
+      "valid_to",
+      "source_url",
+      "master_version",
+      "life"
+    ],
+    "foreignKeys": [],
+    "types": {
+      "id": "text",
+      "method": "text",
+      "rate": "text",
+      "guarantee": "text",
+      "revised_rate": "text",
+      "valid_from": "text",
+      "valid_to": "text",
+      "source_url": "text",
+      "master_version": "text",
+      "life": "integer"
+    }
+  },
+  "depreciation_runs": {
+    "columns": [
+      "id",
+      "company_id",
+      "month",
+      "status",
+      "created_by",
+      "created_at",
+      "snapshot_json",
+      "revision"
+    ],
+    "foreignKeys": [
+      {
+        "column": "company_id",
+        "table": "companies"
+      }
+    ],
+    "types": {
+      "id": "text",
+      "company_id": "text",
+      "month": "text",
+      "status": "text",
+      "created_by": "text",
+      "created_at": "text",
+      "snapshot_json": "text",
+      "revision": "integer"
+    }
+  },
+  "depreciation_schedules": {
+    "columns": [
+      "id",
+      "asset_book_id",
+      "fiscal_start",
+      "month",
+      "settings_json",
+      "annual_amount",
+      "monthly_amount",
+      "revised_basis"
+    ],
+    "foreignKeys": [
+      {
+        "column": "asset_book_id",
+        "table": "asset_books"
+      }
+    ],
+    "types": {
+      "id": "text",
+      "asset_book_id": "text",
+      "fiscal_start": "text",
+      "month": "text",
+      "settings_json": "text",
+      "annual_amount": "integer",
+      "monthly_amount": "integer",
+      "revised_basis": "integer"
+    }
+  },
+  "depreciation_results": {
+    "columns": [
+      "id",
+      "run_id",
+      "asset_book_id",
+      "month",
+      "status",
+      "snapshot_json",
+      "opening",
+      "amount",
+      "accumulated",
+      "closing",
+      "annual_amount",
+      "revised_basis"
+    ],
+    "foreignKeys": [
+      {
+        "column": "run_id",
+        "table": "depreciation_runs"
+      },
+      {
+        "column": "asset_book_id",
+        "table": "asset_books"
+      }
+    ],
+    "types": {
+      "id": "text",
+      "run_id": "text",
+      "asset_book_id": "text",
+      "month": "text",
+      "status": "text",
+      "snapshot_json": "text",
+      "opening": "integer",
+      "amount": "integer",
+      "accumulated": "integer",
+      "closing": "integer",
+      "annual_amount": "integer",
+      "revised_basis": "integer"
+    }
+  },
+  "depreciation_period_closings": {
+    "columns": [
+      "id",
+      "company_id",
+      "run_id",
+      "month",
+      "status",
+      "confirmed_by",
+      "confirmed_at",
+      "cancelled_by",
+      "cancelled_at",
+      "reason",
+      "version"
+    ],
+    "foreignKeys": [
+      {
+        "column": "company_id",
+        "table": "companies"
+      },
+      {
+        "column": "run_id",
+        "table": "depreciation_runs"
+      }
+    ],
+    "types": {
+      "id": "text",
+      "company_id": "text",
+      "run_id": "text",
+      "month": "text",
+      "status": "text",
+      "confirmed_by": "text",
+      "confirmed_at": "text",
+      "cancelled_by": "text",
+      "cancelled_at": "text",
+      "reason": "text",
+      "version": "integer"
+    }
+  },
+  "asset_movements": {
+    "columns": [
+      "id",
+      "company_id",
+      "asset_id",
+      "type",
+      "date",
+      "reason",
+      "before_json",
+      "after_json",
+      "created_by",
+      "approved_by",
+      "created_at",
+      "amount"
+    ],
+    "foreignKeys": [
+      {
+        "column": "company_id",
+        "table": "companies"
+      },
+      {
+        "column": "asset_id",
+        "table": "assets"
+      }
+    ],
+    "types": {
+      "id": "text",
+      "company_id": "text",
+      "asset_id": "text",
+      "type": "text",
+      "date": "text",
+      "reason": "text",
+      "before_json": "text",
+      "after_json": "text",
+      "created_by": "text",
+      "approved_by": "text",
+      "created_at": "text",
+      "amount": "integer"
+    }
+  },
+  "asset_capital_expenditures": {
+    "columns": [
+      "id",
+      "asset_id",
+      "child_asset_id",
+      "date",
+      "reason",
+      "amount"
+    ],
+    "foreignKeys": [
+      {
+        "column": "asset_id",
+        "table": "assets"
+      },
+      {
+        "column": "child_asset_id",
+        "table": "assets"
+      }
+    ],
+    "types": {
+      "id": "text",
+      "asset_id": "text",
+      "child_asset_id": "text",
+      "date": "text",
+      "reason": "text",
+      "amount": "integer"
+    }
+  },
+  "asset_impairments": {
+    "columns": [
+      "id",
+      "asset_book_id",
+      "date",
+      "reason",
+      "amount"
+    ],
+    "foreignKeys": [
+      {
+        "column": "asset_book_id",
+        "table": "asset_books"
+      }
+    ],
+    "types": {
+      "id": "text",
+      "asset_book_id": "text",
+      "date": "text",
+      "reason": "text",
+      "amount": "integer"
+    }
+  },
+  "asset_disposals": {
+    "columns": [
+      "id",
+      "asset_id",
+      "date",
+      "type",
+      "reason",
+      "proceeds",
+      "book_value",
+      "gain_loss"
+    ],
+    "foreignKeys": [
+      {
+        "column": "asset_id",
+        "table": "assets"
+      }
+    ],
+    "types": {
+      "id": "text",
+      "asset_id": "text",
+      "date": "text",
+      "type": "text",
+      "reason": "text",
+      "proceeds": "integer",
+      "book_value": "integer",
+      "gain_loss": "integer"
+    }
+  },
+  "goodwill_records": {
+    "columns": [
+      "id",
+      "company_id",
+      "asset_id",
+      "date",
+      "treatment",
+      "source_url",
+      "details_json",
+      "amount"
+    ],
+    "foreignKeys": [
+      {
+        "column": "company_id",
+        "table": "companies"
+      },
+      {
+        "column": "asset_id",
+        "table": "assets"
+      }
+    ],
+    "types": {
+      "id": "text",
+      "company_id": "text",
+      "asset_id": "text",
+      "date": "text",
+      "treatment": "text",
+      "source_url": "text",
+      "details_json": "text",
+      "amount": "integer"
+    }
+  },
+  "negative_goodwill_records": {
+    "columns": [
+      "id",
+      "company_id",
+      "asset_id",
+      "date",
+      "treatment",
+      "source_url",
+      "details_json",
+      "amount"
+    ],
+    "foreignKeys": [
+      {
+        "column": "company_id",
+        "table": "companies"
+      },
+      {
+        "column": "asset_id",
+        "table": "assets"
+      }
+    ],
+    "types": {
+      "id": "text",
+      "company_id": "text",
+      "asset_id": "text",
+      "date": "text",
+      "treatment": "text",
+      "source_url": "text",
+      "details_json": "text",
+      "amount": "integer"
+    }
+  },
+  "lump_sum_depreciation_groups": {
+    "columns": [
+      "id",
+      "company_id",
+      "asset_id",
+      "date",
+      "treatment",
+      "source_url",
+      "details_json",
+      "amount"
+    ],
+    "foreignKeys": [
+      {
+        "column": "company_id",
+        "table": "companies"
+      },
+      {
+        "column": "asset_id",
+        "table": "assets"
+      }
+    ],
+    "types": {
+      "id": "text",
+      "company_id": "text",
+      "asset_id": "text",
+      "date": "text",
+      "treatment": "text",
+      "source_url": "text",
+      "details_json": "text",
+      "amount": "integer"
+    }
+  },
+  "small_asset_treatments": {
+    "columns": [
+      "id",
+      "company_id",
+      "asset_id",
+      "date",
+      "treatment",
+      "source_url",
+      "details_json",
+      "amount"
+    ],
+    "foreignKeys": [
+      {
+        "column": "company_id",
+        "table": "companies"
+      },
+      {
+        "column": "asset_id",
+        "table": "assets"
+      }
+    ],
+    "types": {
+      "id": "text",
+      "company_id": "text",
+      "asset_id": "text",
+      "date": "text",
+      "treatment": "text",
+      "source_url": "text",
+      "details_json": "text",
+      "amount": "integer"
+    }
+  },
+  "tax_adjustments": {
+    "columns": [
+      "id",
+      "company_id",
+      "asset_id",
+      "date",
+      "treatment",
+      "source_url",
+      "details_json",
+      "amount"
+    ],
+    "foreignKeys": [
+      {
+        "column": "company_id",
+        "table": "companies"
+      },
+      {
+        "column": "asset_id",
+        "table": "assets"
+      }
+    ],
+    "types": {
+      "id": "text",
+      "company_id": "text",
+      "asset_id": "text",
+      "date": "text",
+      "treatment": "text",
+      "source_url": "text",
+      "details_json": "text",
+      "amount": "integer"
+    }
+  },
+  "property_tax_records": {
+    "columns": [
+      "id",
+      "company_id",
+      "asset_id",
+      "date",
+      "treatment",
+      "source_url",
+      "details_json",
+      "amount"
+    ],
+    "foreignKeys": [
+      {
+        "column": "company_id",
+        "table": "companies"
+      },
+      {
+        "column": "asset_id",
+        "table": "assets"
+      }
+    ],
+    "types": {
+      "id": "text",
+      "company_id": "text",
+      "asset_id": "text",
+      "date": "text",
+      "treatment": "text",
+      "source_url": "text",
+      "details_json": "text",
+      "amount": "integer"
+    }
+  },
+  "journal_headers": {
+    "columns": [
+      "id",
+      "company_id",
+      "run_id",
+      "date",
+      "type",
+      "description",
+      "status",
+      "created_at"
+    ],
+    "foreignKeys": [
+      {
+        "column": "company_id",
+        "table": "companies"
+      },
+      {
+        "column": "run_id",
+        "table": "depreciation_runs"
+      }
+    ],
+    "types": {
+      "id": "text",
+      "company_id": "text",
+      "run_id": "text",
+      "date": "text",
+      "type": "text",
+      "description": "text",
+      "status": "text",
+      "created_at": "text"
+    }
+  },
+  "journal_lines": {
+    "columns": [
+      "id",
+      "header_id",
+      "asset_id",
+      "account",
+      "department",
+      "debit",
+      "credit"
+    ],
+    "foreignKeys": [
+      {
+        "column": "header_id",
+        "table": "journal_headers"
+      },
+      {
+        "column": "asset_id",
+        "table": "assets"
+      }
+    ],
+    "types": {
+      "id": "text",
+      "header_id": "text",
+      "asset_id": "text",
+      "account": "text",
+      "department": "text",
+      "debit": "integer",
+      "credit": "integer"
+    }
+  },
+  "journal_export_history": {
+    "columns": [
+      "id",
+      "company_id",
+      "date",
+      "actor",
+      "status",
+      "details_json",
+      "count"
+    ],
+    "foreignKeys": [
+      {
+        "column": "company_id",
+        "table": "companies"
+      }
+    ],
+    "types": {
+      "id": "text",
+      "company_id": "text",
+      "date": "text",
+      "actor": "text",
+      "status": "text",
+      "details_json": "text",
+      "count": "integer"
+    }
+  },
+  "import_jobs": {
+    "columns": [
+      "id",
+      "company_id",
+      "date",
+      "actor",
+      "status",
+      "details_json",
+      "count"
+    ],
+    "foreignKeys": [
+      {
+        "column": "company_id",
+        "table": "companies"
+      }
+    ],
+    "types": {
+      "id": "text",
+      "company_id": "text",
+      "date": "text",
+      "actor": "text",
+      "status": "text",
+      "details_json": "text",
+      "count": "integer"
+    }
+  },
+  "backup_history": {
+    "columns": [
+      "id",
+      "company_id",
+      "date",
+      "actor",
+      "status",
+      "details_json",
+      "count"
+    ],
+    "foreignKeys": [
+      {
+        "column": "company_id",
+        "table": "companies"
+      }
+    ],
+    "types": {
+      "id": "text",
+      "company_id": "text",
+      "date": "text",
+      "actor": "text",
+      "status": "text",
+      "details_json": "text",
+      "count": "integer"
+    }
+  },
+  "audit_logs": {
+    "columns": [
+      "id",
+      "company_id",
+      "asset_id",
+      "operation",
+      "actor",
+      "date",
+      "before_json",
+      "after_json",
+      "reason",
+      "result"
+    ],
+    "foreignKeys": [
+      {
+        "column": "company_id",
+        "table": "companies"
+      }
+    ],
+    "types": {
+      "id": "text",
+      "company_id": "text",
+      "asset_id": "text",
+      "operation": "text",
+      "actor": "text",
+      "date": "text",
+      "before_json": "text",
+      "after_json": "text",
+      "reason": "text",
+      "result": "text"
+    }
+  },
+  "system_parameters": {
+    "columns": [
+      "id",
+      "key",
+      "value_json",
+      "valid_from",
+      "valid_to",
+      "source_url"
+    ],
+    "foreignKeys": [],
+    "types": {
+      "id": "text",
+      "key": "text",
+      "value_json": "text",
+      "valid_from": "text",
+      "valid_to": "text",
+      "source_url": "text"
+    }
+  },
+  "mutation_locks": {
+    "columns": [
+      "id",
+      "company_id",
+      "token",
+      "version"
+    ],
+    "foreignKeys": [
+      {
+        "column": "company_id",
+        "table": "companies"
+      }
+    ],
+    "types": {
+      "id": "text",
+      "company_id": "text",
+      "token": "text",
+      "version": "integer"
+    }
+  },
+  "legacy_archive": {
+    "columns": [
+      "id",
+      "table_name",
+      "row_json",
+      "archived_at",
+      "reason"
+    ],
+    "foreignKeys": [],
+    "types": {
+      "id": "text",
+      "table_name": "text",
+      "row_json": "text",
+      "archived_at": "text",
+      "reason": "text"
+    }
+  }
+}

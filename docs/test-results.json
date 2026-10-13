@@ -1,0 +1,1 @@
+{"date":"2026-10-13","runtime":"Node.js v24.19.0 / Linux","typecheck":"passed","build":"passed","unit_and_memory_db_http_tests":{"total":25,"passed":25,"failed":0},"real_sql_server":{"executed":false,"skipped":1,"reason":"No Windows/SQL Server connection provided"},"windows_execution":false,"browser_ui":false,"iis":false,"source_site_modified":false}
