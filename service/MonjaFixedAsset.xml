@@ -1,0 +1,11 @@
+<service>
+  <id>MonjaFixedAsset</id>
+  <name>もんじゃ固定資産管理</name>
+  <description>MONJA FIXED ASSET SYSTEM Web Server</description>
+  <executable>%BASE%\..\runtime\node.exe</executable>
+  <arguments>dist/server.mjs</arguments>
+  <workingdirectory>%BASE%\..</workingdirectory>
+  <startmode>Manual</startmode>
+  <onfailure action="restart" delay="10 sec"/>
+  <log mode="roll"/>
+</service>

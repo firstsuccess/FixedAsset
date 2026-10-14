@@ -9,3 +9,8 @@ backups/
 npm-debug.log*
 *.sqlite
 *.sqlite3
+
+# Windows installer build artifacts
+installer/output/
+runtime/*.exe
+service/*.exe
