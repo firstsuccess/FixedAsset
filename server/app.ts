@@ -15,7 +15,7 @@ const router=express.Router();
 router.use('/api',(_req,res,next)=>{res.set('Cache-Control','no-store');next();});
 router.use((req,_res,next)=>{if(req.method==='POST'){if(req.get('origin')!==c.origin)return next(Error('FORBIDDEN: 同一Siteから操作してください'));if(!req.is('application/json'))return next(Error('JSON形式が必要です'));}next();});
 router.get('/health',async(_req,res)=>{await db.prepare('SELECT 1 AS ready').first();res.json({status:'ok',application:c.name,version:'1.0.0'});});
-router.get('/api/config',(_req,res)=>res.json({name:c.name,nameEN:c.nameEN,basePath:c.basePath,timezone:c.timezone}));
+router.get('/api/config',(_req,res)=>res.json({name:c.name,nameEN:c.nameEN,basePath:c.basePath,timezone:c.timezone,features:{companyLifecycle:true}}));
 router.get('/api/auth',async(_req,res)=>{try{const u=await auth.sessionIdentity(true);res.json({user:{id:u.id,login_id:u.login_id,display_name:u.display_name,role:u.role,must_change_password:!!u.must_change_password}});}catch{res.status(401).json({user:null});}});
 router.post('/api/auth',async(req,res)=>{const p=req.body,ip=requestContext.getStore()!.ip;let result:any={},cookie:string|undefined;
  if(JSON.stringify(p).length>8192)throw Error('入力サイズが大きすぎます');
