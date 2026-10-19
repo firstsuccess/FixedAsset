@@ -1,11 +1,12 @@
 // Node.js-compatible: no framework, browser, or Sites imports.
 import {legacySchedule,legacyAnnual} from './legacy';
 import rates from './rates.json' with { type: 'json' };
+import {lumpSumSchedules,validateLumpBook} from './lump-sum';
 export type Rounding = 'floor'|'round'|'ceil';
-export type Method = 'straight'|'declining200'|'declining250'|'none'|'goodwill'|'immediate'|'oldStraight'|'oldDeclining';
+export type Method = 'straight'|'declining200'|'declining250'|'none'|'goodwill'|'immediate'|'oldStraight'|'oldDeclining'|'lumpSum3';
 export type Book = {id:string;asset_id:string;kind:string;cost:number;life:number;method:Method;residual:number;rounding:Rounding;start_month:string;rate?:string;guarantee?:string;revised_rate?:string;legacy_tail_start?:string|null;legacy_rule_start?:string|null;legacy_intangible?:number|null};
 export type Opening = {as_of:string;accumulated:number;impairment:number;balance:number;revised_basis:number};
-export type Settings = {first_month:string;rounding:Rounding;tax_rounding:Rounding;adjustment:'year_end'|'last'|'specified';adjustment_month:number;posting:'direct'|'indirect'};
+export type Settings = {first_month:string;rounding:Rounding;tax_rounding:Rounding;adjustment:'year_end'|'last'|'specified';adjustment_month:number;posting:'direct'|'indirect';company_kind?:'corporate'|'individual'};
 export type Monthly = {month:string;opening:number;amount:number;accumulated:number;closing:number;annual_amount:number;revised_basis:number};
 export function monthNumber(v:string){if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(v))throw Error('年月の形式が不正です');return Number(v.slice(0,4))*12+Number(v.slice(5))-1;}
 export function monthString(n:number){return `${Math.floor(n/12)}-${String(n%12+1).padStart(2,'0')}`;}
@@ -14,6 +15,7 @@ function frac(s:string){if(!/^\d+(\.\d+)?$/.test(s))throw Error('率が不正で
 export function multiply(amount:number,rate:string,months=12,mode:Rounding='floor'){const r=frac(rate);return roundFraction(BigInt(amount)*r.n*BigInt(months),r.d*12n,mode);}
 export function officialRate(method:string,life:number){const r=(rates as Record<string,Record<string,string>>)[String(life)];if(!r)throw Error('公式確認済み償却率は耐用年数2〜50年です');return {rate:r[method],guarantee:r['guarantee'+method.replace('declining','')],revised_rate:r['revised'+method.replace('declining','')]};}
 export function annual(book:Book,opening:number,months:number,revisedBasis=0){
+ if(book.method==='lumpSum3'){validateLumpBook(book);return {amount:Math.min(opening,roundFraction(BigInt(book.cost),3n,book.rounding)),revisedBasis:0};}
  if(book.method==='oldStraight'||book.method==='oldDeclining')return {amount:legacyAnnual(book,opening,months,opening<=book.cost-roundFraction(BigInt(book.cost)*95n,100n,'floor')&&!book.legacy_intangible),revisedBasis:0};
  if(book.method==='none')return{amount:0,revisedBasis};
  const remaining=Math.max(0,opening-book.residual);if(!remaining)return{amount:0,revisedBasis};
@@ -35,6 +37,7 @@ export function allocate(total:number,months:string[],mode:Rounding,adjustMonth:
  return months.map((_,i)=>i===idx?total:0);
 }return values;}
 export function schedule(book:Book,fiscalEnd:number,settings:Settings,toMonth:string,opening?:Opening):Monthly[]{
+ if(book.method==='lumpSum3')return lumpSumSchedules([book],fiscalEnd,settings,toMonth,{[book.id]:opening}).get(book.id)!;
  if(book.method==='oldStraight'||book.method==='oldDeclining')return legacySchedule(book,fiscalEnd,settings,toMonth,opening);
  if(opening&&book.method.startsWith('declining')){if(opening.revised_basis&&(opening.revised_basis<opening.balance||opening.revised_basis>book.cost))throw Error('改定取得価額は初期残高以上・取得価額以下です');if(!opening.revised_basis&&annual(book,opening.balance,12,0).revisedBasis)throw Error('初期残高の定率法切替状態を確認し、改定取得価額を入力してください');}const end=monthNumber(toMonth);const service=monthNumber(book.start_month);const start=opening?monthNumber(opening.as_of.slice(0,7))+1:service;
  if(end<start)return[];if(end-start>2400)throw Error('照会期間が長すぎます');
@@ -58,10 +61,11 @@ export function schedule(book:Book,fiscalEnd:number,settings:Settings,toMonth:st
  }
  return rows;
 }
-export const enabledMethods=[{code:'straight',name:'定額法'},{code:'declining200',name:'200％定率法'},{code:'declining250',name:'250％定率法'},{code:'oldStraight',name:'旧定額法（標準資産）'},{code:'oldDeclining',name:'旧定率法（標準資産）'},{code:'none',name:'償却対象外'},{code:'goodwill',name:'のれん（会計のみ）'},{code:'immediate',name:'10万円未満の即時費用化'}];
+export const enabledMethods=[{code:'straight',name:'定額法'},{code:'declining200',name:'200％定率法'},{code:'declining250',name:'250％定率法'},{code:'oldStraight',name:'旧定額法（標準資産）'},{code:'oldDeclining',name:'旧定率法（標準資産）'},{code:'none',name:'償却対象外'},{code:'goodwill',name:'のれん（会計のみ）'},{code:'immediate',name:'10万円未満の即時費用化'},{code:'lumpSum3',name:'一括償却資産（3年均等償却）'}];
 // Preserve the monthly allocations before a disposal, then reconcile the disposal month
 // to the prorated annual limit. This never rewrites a confirmed earlier month.
 export function disposalSchedule(book:Book,fiscalEnd:number,settings:Settings,disposalMonth:string,opening?:Opening):Monthly[]{
+ if(book.method==='lumpSum3')return schedule(book,fiscalEnd,settings,disposalMonth,opening);
  const rows=schedule(book,fiscalEnd,settings,disposalMonth,opening);const last=rows.at(-1);if(!last)return rows;
  const end=monthNumber(disposalMonth),fyStart=end-((end%12+1-fiscalEnd-1+12)%12);
  const yearRows=rows.filter(r=>monthNumber(r.month)>=fyStart);const first=yearRows[0];

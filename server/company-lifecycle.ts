@@ -39,6 +39,7 @@ export async function deleteArchivedCompany(user:Row,p:any){
   statement("UPDATE mutation_locks SET company_id=NULL WHERE id='system' AND company_id=?",[check.company.id],t),
   ...deletionOrder(data.selected).map(table=>{const scope=data.selected.get(table)!;return statement(`DELETE FROM ${table} WHERE ${scope.where}`,scope.values,t);}),
   statement('DELETE FROM system_parameters WHERE key=?',[companyArchiveKey(check.company.id)],t),
+  statement('DELETE FROM system_parameters WHERE key=?',['account-defaults:'+check.company.id],t),
   audit(null,user.id,'DELETE_ARCHIVED_COMPANY',{company_id:check.company.id,counts:check.counts},{deleted:true},why,t)
  ]);
  return {revision:version,deleted_company:check.company.id,counts:check.counts};

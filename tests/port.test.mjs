@@ -136,6 +136,44 @@ test('会社アーカイブ: 非表示・アクセス拒否・復帰・物理削
  assert.deepEqual((await s.getState(cid)).assets,beforeOthers.assets);for(const table of sharedTables)assert.deepEqual(await r.all('SELECT * FROM '+table),sharedBefore[table]);assert(await r.one("SELECT id FROM audit_logs WHERE operation='DELETE_ARCHIVED_COMPANY'"));
 });
 
+test('一括償却業務: 年度合算・翌月追加・除却継続・一斉確定・CSV・マスタ更新',async()=>{
+ context(token);const user=await a.sessionIdentity();await s.ensureLumpSumMasters();const seededRevision=await r.revision();await s.ensureLumpSumMasters();assert.equal(await r.revision(),seededRevision);assert(await r.one("SELECT id FROM depreciation_methods WHERE code='lumpSum3'"));
+ await s.createCompany(user,{code:'LUMP',name:'一括償却検証',kind:'corporate',first_month:'2026-10',fiscal_end_month:3,revision:await r.revision()});const company=(await s.getState()).companies.find(c=>c.code==='LUMP').id;
+ const payload={number:'L1',name:'一括資産1',category:'一括償却資産',acquisition_date:'2026-10-01',service_date:'2026-10-01',cost:100001,accounting:{method:'lumpSum3',life:99,residual:1},tax:{method:'lumpSum3',life:99,residual:1}};
+ await s.saveAsset(user,company,{...payload,revision:await r.revision()});let current=await s.getState(company);const asset=current.assets[0];assert(current.books.every(b=>b.life===3&&b.residual===0));
+ await assert.rejects(async()=>s.saveAsset(user,company,{...payload,number:'BAD',cost:200000,revision:await r.revision()}),/20万円/);
+ await s.bulkPeriodConfirm(user,company,{month:'2026-10',until:'2026-10',reviewed:true,reason:'一括償却検証',revision:await r.revision()});const october=(await s.runData(company,'2026-10')).rows.find(x=>x.kind==='tax');assert.equal(october.amount,5555);
+ await s.saveAsset(user,company,{...payload,number:'L2',name:'後月の一括資産',acquisition_date:'2027-03-01',service_date:'2027-03-01',revision:await r.revision()});
+ await s.movement(user,company,{asset_id:asset.id,type:'disposed',date:'2026-11-30',reason:'一括償却の除却検証',proceeds:0,revision:await r.revision()});
+ const plan=await s.bulkPeriodPlan(user,company,{mode:'confirm',until:'2029-03',revision:await r.revision()});for(const month of plan.months)await s.bulkPeriodConfirm(user,company,{month,until:'2029-03',reason:'3年一斉確定',reviewed:true,revision:await r.revision()});
+ const december=(await s.runData(company,'2026-12')).rows.find(x=>x.kind==='tax'&&x.asset_book_id===current.books.find(b=>b.kind==='tax').id);assert.equal(december.amount,5555);assert.equal(december.opening,88891);
+ const yearEnd=(await s.runData(company,'2027-03')).rows.filter(r=>r.kind==='tax');assert.equal(yearEnd.reduce((n,r)=>n+r.annual_amount,0),66667);assert.equal(yearEnd.reduce((n,r)=>n+r.accumulated,0),66667);
+ const finished=(await s.runData(company,'2029-03')).rows;assert(finished.every(r=>r.closing===0));assert.equal(finished.filter(r=>r.kind==='tax').reduce((n,r)=>n+r.accumulated,0),200002);
+ const noJournal=await s.transactionJournal(user,company,{asset_id:asset.id,kind:'disposal',revision:await r.revision()});assert.equal(noJournal.no_journal,true);assert.equal((await s.journals(company)).headers.length,0);
+ const balances=await s.balances(company,'2026-12-31');assert(balances.rows.find(r=>r.asset_id===asset.id&&r.kind==='tax').balance>0);
+ const sale=(await s.getState(company)).assets.find(a=>a.number==='L2');await s.movement(user,company,{asset_id:sale.id,type:'sold',date:'2029-04-30',reason:'償却済み一括資産の売却',proceeds:700,revision:await r.revision()});await s.bulkPeriodConfirm(user,company,{month:'2029-04',until:'2029-04',reviewed:true,reason:'売却検証',revision:await r.revision()});await s.transactionJournal(user,company,{asset_id:sale.id,kind:'disposal',revision:await r.revision()});const salesJournal=await s.journals(company);assert.equal(salesJournal.lines.length,2);assert(salesJournal.lines.some(l=>l.account==='8200'&&l.credit===700));assert(!salesJournal.lines.some(l=>l.account==='7210'));
+ const csv=await s.exportCSV(user,company,{entity:'assets'});assert(csv.includes('lumpSum3'));const forecast=await s.scheduleData(company,'2026-10','2029-03');assert(forecast.rows.some(row=>row.number==='L1'&&row.month==='2028-12'));
+});
+
+test('一括償却の会計と税務の分離: 会計除却後も税務償却を継続',async()=>{
+ context(token);const user=await a.sessionIdentity();await s.createCompany(user,{code:'LUMP-MIX',name:'会計税務分離',kind:'corporate',first_month:'2026-10',fiscal_end_month:3,revision:await r.revision()});const company=(await s.getState()).companies.find(c=>c.code==='LUMP-MIX').id;
+ await s.saveAsset(user,company,{number:'M1',name:'会計定額・税務一括',category:'器具及び備品',acquisition_date:'2026-10-01',service_date:'2026-10-01',cost:180000,accounting:{method:'straight',life:5,residual:1},tax:{method:'lumpSum3'},revision:await r.revision()});const asset=(await s.getState(company)).assets[0];
+ await s.bulkPeriodConfirm(user,company,{month:'2026-10',until:'2026-10',reviewed:true,reason:'検証',revision:await r.revision()});
+ await s.movement(user,company,{asset_id:asset.id,type:'sold',date:'2026-11-30',reason:'売却',proceeds:10000,revision:await r.revision()});
+ for(const month of ['2026-11','2026-12'])await s.bulkPeriodConfirm(user,company,{month,until:'2026-12',reviewed:true,reason:'検証',revision:await r.revision()});
+ const rows=(await s.runData(company,'2026-12')).rows;assert.equal(rows.length,1);assert.equal(rows[0].kind,'tax');assert.equal(rows[0].amount,10000);
+ const balances=(await s.balances(company,'2026-12-31')).rows;assert.equal(balances.find(b=>b.kind==='accounting').balance,0);assert.equal(balances.find(b=>b.kind==='tax').balance,150000);
+ await s.transactionJournal(user,company,{asset_id:asset.id,kind:'disposal',revision:await r.revision()});const j=await s.journals(company);assert.equal(j.lines.reduce((n,l)=>n+l.debit-l.credit,0),0);
+});
+
+test('一括償却CSV移行: 年度全件で初期残高をレビューして確定',async()=>{
+ context(token);const user=await a.sessionIdentity();await s.createCompany(user,{code:'LUMP-CSV',name:'一括移行',kind:'corporate',first_month:'2026-04',fiscal_end_month:3,revision:await r.revision()});const company=(await s.getState()).companies.find(c=>c.code==='LUMP-CSV').id;
+ const headers=parseCSV(s.migrationTemplate())[0];const base={name:'移行一括資産',category:'一括償却資産',acquisition_date:'2025-10-01',service_date:'2025-10-01',cost:100001,tax:0,ancillary:0,accounting_method:'lumpSum3',accounting_life:3,accounting_residual:0,tax_method:'lumpSum3',tax_life:3,tax_residual:0,accounting_opening_as_of:'2026-03-31',tax_opening_as_of:'2026-03-31'};
+ const make=wrong=>buildCSV([headers,...[0,1].map(i=>headers.map(h=>({...base,number:'CSV'+i,accounting_opening_accumulated:i===0?33333:wrong?33333:33334,tax_opening_accumulated:i===0?33333:wrong?33333:33334})[h]??''))]);
+ const invalid=await s.importPreview(user,company,{csv:make(true),mode:'new'});assert.equal(invalid.counts.error,2);assert.equal((await s.getState(company)).assets.length,0);
+ const csv=make(false),preview=await s.importPreview(user,company,{csv,mode:'new'});assert.equal(preview.counts.new,2);await s.importCommit(user,company,{csv,mode:'new',reviewed:true,review_token:preview.review_token,revision:preview.revision});await s.bulkPeriodConfirm(user,company,{month:'2026-04',until:'2026-04',reviewed:true,reason:'移行',revision:await r.revision()});assert.equal((await s.runData(company,'2026-04')).rows.length,4);
+});
+
 test('ログインID変更: ハッシュ・操作者UUID維持・旧ID/セッション拒否',async()=>{
  context(token);const old=(await r.one('SELECT * FROM auth_accounts WHERE user_id=?',uid)).password_hash;await a.manageUser(await a.sessionIdentity(),{user_id:uid,login_id:' ADMINISTRATOR ',display_name:'管理者',role:'System Administrator',active:1,revision:await r.revision(),password:'new-admin-password-123'},'rename-ip');await assert.rejects(()=>a.sessionIdentity(),/UNAUTHENTICATED/);await assert.rejects(()=>a.login('admin1','new-admin-password-123','rename-ip'),/UNAUTHENTICATED/);token=(await a.login('administrator','new-admin-password-123','rename-ip')).token;context(token);assert.equal((await a.sessionIdentity()).id,uid);assert.equal((await r.one('SELECT * FROM auth_accounts WHERE user_id=?',uid)).password_hash,old);assert.equal((await r.one('SELECT * FROM auth_accounts WHERE user_id=?',uid)).exempt_from_account_lockout,1);
 });
@@ -153,4 +191,44 @@ test('HTTP API: 起動・health・Cookie・CSRF・未認証データ保護',asyn
  await lifecycleRequest('company-archive');const hidden=await (await fetch(url+'/api/fam',{headers:{cookie}})).json();assert.equal(hidden.companyLifecycleEnabled,true);assert(!hidden.companies.some(c=>c.id===cid));assert(hidden.archived_companies.some(c=>c.id===cid));await lifecycleRequest('company-restore');
 
  }finally{await new Promise(resolve=>server.close(resolve));}
+});
+
+test('登録時科目デフォルト: 会社・分類・簿別、既存保持、権限、競合、CSV',async()=>{
+ context(token);await action({action:'company',code:'DEFAULTS',name:'科目設定テスト',kind:'corporate',first_month:'2026-04',fiscal_end_month:3});
+ const company=(await s.getState()).companies.find(c=>c.code==='DEFAULTS').id;
+ const call=async p=>s.dispatch({company_id:company,revision:await r.revision(),...p});
+ const category=(await s.masterData()).categories.find(c=>c.name==='器具及び備品');
+ const base={action:'asset',name:'科目デフォルト',category:category.name,cost:300000,acquisition_date:'2026-04-01',service_date:'2026-04-01',accounting:{method:'straight',life:5,residual:1},tax:{method:'straight',life:5,residual:1}};
+ await call({...base,number:'BEFORE'});
+ const saved={'*':{accounting:{expense_account:'8200'},tax:{expense_account:'6100'}},[category.id]:{accounting:{account:'1590'},tax:{account:'1550',accumulated_account:'1550'}}};
+ await call({action:'account-defaults',defaults:saved});
+ assert.deepEqual((await s.getState(company)).accountDefaults,saved);
+ await call({...base,number:'AFTER'});
+ let state=await s.getState(company),before=state.assets.find(a=>a.number==='BEFORE'),after=state.assets.find(a=>a.number==='AFTER');
+ assert.equal(state.books.find(b=>b.asset_id===before.id&&b.kind==='accounting').expense_account,'6100');
+ assert.equal(state.books.find(b=>b.asset_id===after.id&&b.kind==='accounting').expense_account,'8200');
+ assert.equal(state.books.find(b=>b.asset_id===after.id&&b.kind==='accounting').account,'1590');
+ assert.equal(state.books.find(b=>b.asset_id===after.id&&b.kind==='tax').accumulated_account,'1550');
+ await call({...base,id:before.id,version:before.version,number:before.number});
+ state=await s.getState(company);assert.equal(state.books.find(b=>b.asset_id===before.id&&b.kind==='accounting').expense_account,'6100');
+ await assert.rejects(()=>call({action:'account-defaults',defaults:{'*':{accounting:{account:'MISSING'}}}}),/会社マスタ/);
+ await assert.rejects(()=>call({action:'account-defaults',defaults:{missing:{}}}),/分類/);
+ await assert.rejects(()=>call({action:'account-defaults',defaults:{},revision:-1}),/CONFLICT/);
+ const {saveAccountDefaults}=await import('../server/account-defaults.ts');await assert.rejects(()=>saveAccountDefaults({id:'none',role:'Viewer'},company,{defaults:{}}),/FORBIDDEN/);
+ assert.deepEqual((await s.getState(cid)).accountDefaults,{});
+ const csv=buildCSV([['number','name','category','acquisition_date','service_date','cost','tax','ancillary','accounting_method','accounting_life','accounting_residual','tax_method','tax_life','tax_residual'],['IMPORT','取込',category.name,'2026-04-01','2026-04-01',300000,0,0,'straight',5,1,'straight',5,1]]);
+ const preview=await call({action:'import-preview',csv,mode:'new'});assert.equal(preview.results[0].data.books.find(b=>b.kind==='accounting').expense_account,'8200');
+ await call({action:'account-defaults',defaults:{}});assert.deepEqual((await s.getState(company)).accountDefaults,{});
+});
+
+test('将来月プレビュー: 未確定の間隔を許可し同月の確定残高で整合性を検証',async()=>{
+ context(token);const user=await a.sessionIdentity();await action({action:'company',code:'GAP',name:'将来月検証',kind:'corporate',first_month:'2026-01',fiscal_end_month:12});const company=(await s.getState()).companies.find(c=>c.code==='GAP').id;
+ for(const method of ['straight','lumpSum3'])await s.saveAsset(user,company,{number:method,name:method,category:method==='lumpSum3'?'一括償却資産':'器具及び備品',acquisition_date:'2026-02-01',service_date:'2026-02-01',cost:129800,accounting:{method,life:method==='lumpSum3'?3:5,residual:method==='lumpSum3'?0:1},tax:{method,life:method==='lumpSum3'?3:5,residual:method==='lumpSum3'?0:1},revision:await r.revision()});
+ const plan=await s.bulkPeriodPlan(user,company,{mode:'confirm',until:'2026-09',revision:await r.revision()});for(const month of plan.months)await s.bulkPeriodConfirm(user,company,{month,until:'2026-09',reason:'検証',reviewed:true,revision:await r.revision()});
+ assert.equal((await s.preview(company,'2026-10')).rows.length,4);
+ const future=await s.preview(company,'2027-12');assert.equal(future.rows.length,4);assert.equal(future.rows.find(r=>r.number==='lumpSum3'&&r.kind==='accounting').closing,43268);
+ const snapshot=(await s.getState(company)).closings;assert.equal(snapshot.filter(r=>r.status==='confirmed').length,9);
+ const book=(await s.getState(company)).books.find(b=>b.kind==='accounting'&&b.method==='straight');await db.batch([db.prepare('UPDATE asset_books SET cost=? WHERE id=?').bind(139800,book.id)]);
+ await assert.rejects(()=>s.preview(company,'2027-12'),/確定残高と計算残高が不一致/);
+ await db.batch([db.prepare('UPDATE asset_books SET cost=? WHERE id=?').bind(129800,book.id)]);
 });

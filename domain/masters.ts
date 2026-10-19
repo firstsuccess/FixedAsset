@@ -3,7 +3,7 @@ export const sourceRate='https://www.nta.go.jp/taxes/shiraberu/taxanswer/shotoku
 export const sourceLife='https://www.nta.go.jp/taxes/shiraberu/shinkoku/tebiki/2025/pdf/019.pdf';
 export const categories=['建物','建物附属設備','構築物','機械及び装置','車両運搬具','工具','器具及び備品','土地','建設仮勘定','ソフトウェア','特許権','商標権','その他無形固定資産','のれん','負ののれん関連管理','リース資産','一括償却資産','少額減価償却資産','その他'];
 export const categoryAccounts:Record<string,string>={'建物':'1500','建物附属設備':'1510','構築物':'1520','機械及び装置':'1530','車両運搬具':'1540','工具':'1550','器具及び備品':'1550','土地':'1560','建設仮勘定':'1570','ソフトウェア':'1600','特許権':'1600','商標権':'1600','その他無形固定資産':'1600','のれん':'1610','負ののれん関連管理':'8200','リース資産':'1550','一括償却資産':'1550','少額減価償却資産':'1550','その他':'1550'};
-export function categoryMethod(name:string){return ['土地','建設仮勘定'].includes(name)?'none':name==='のれん'?'goodwill':['リース資産','一括償却資産','負ののれん関連管理'].includes(name)?'unsupported':name==='少額減価償却資産'?'immediate':'straight';}
+export function categoryMethod(name:string){return ['土地','建設仮勘定'].includes(name)?'none':name==='のれん'?'goodwill':name==='一括償却資産'?'lumpSum3':['リース資産','負ののれん関連管理'].includes(name)?'unsupported':name==='少額減価償却資産'?'immediate':'straight';}
 export const accounts=[['1500','建物'],['1510','建物附属設備'],['1520','構築物'],['1530','機械及び装置'],['1540','車両運搬具'],['1550','工具器具備品'],['1560','土地'],['1570','建設仮勘定'],['1600','ソフトウェア'],['1610','のれん'],['1590','減価償却累計額'],['6100','減価償却費'],['6110','のれん償却費'],['7100','減損損失'],['7200','固定資産売却損'],['7210','固定資産除却損'],['8200','固定資産売却益'],['2100','未払金'],['1200','仮払消費税'],['1100','現預金']];
 // Main useful-life entries checked against the official 2025 table; not the complete ordinance.
 export const lives:[string,string,string,string,number][]=[
@@ -29,7 +29,7 @@ export const masterRates=Object.entries(rates).flatMap(([life,v])=>['straight','
 export const defaultSettings={first_month:'2026-10',rounding:'floor',tax_rounding:'floor',adjustment:'year_end',adjustment_month:3,posting:'indirect'};
 export const limitations=[
  '旧定額法・旧定率法：標準残存割合と95％後の5年均等に対応。5年部分は切上げ設定のみ。初期残高は決算月末・均等開始年月が必要。特殊な残存割合、方法変更等の経過措置は未対応。',
- '一括償却資産・中小企業少額資産特例：制度パラメーターと保存領域を準備。グループ計算・年間枠・適用要件の判定は未実装。通常償却と混在させません。',
+ '一括償却資産：20万円未満・3年・残存0円、供用年度別の合計計算と決算月端数調整に対応。貸付用途等の適用要件は利用者が確認してください。中小企業少額資産特例の年間枠・適用判定は未対応。',
  '法定耐用年数：公式資料の主要46細目を登録。機械・装置等を含む省令全件の収録は継続作業。確認済み耐用年数の手入力は可能。',
  '初期残高：月末基準のみ。定率法は決算月末基準。途中年度移行・任意償却スケジュール・税務の経過措置は継続作業。',
  '異動：部門・場所移動、月末の全部売却・全部除却と未確定処分取消に対応。処分は次の未確定月へ登録。資本的支出、減損、一部処分、分割・統合、方法変更は未実装。',

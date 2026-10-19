@@ -1,0 +1,9 @@
+import {useEffect,useState} from 'react';
+import {accountFields,type AccountDefaults} from '../domain/account-defaults';
+const labels=['資産勘定科目','償却費勘定科目','累計額勘定科目'];
+export default function AccountDefaults({categories,accounts,saved,busy,onSave}:{categories:any[];accounts:any[];saved:AccountDefaults;busy:boolean;onSave:(value:AccountDefaults)=>Promise<any>}){
+ const [value,setValue]=useState(saved),[category,setCategory]=useState('*');
+ useEffect(()=>setValue(saved),[saved]);
+ function change(kind:string,field:string,code:string){setValue(old=>{const fields={...old[category]?.[kind]};if(code)fields[field]=code;else delete fields[field];return {...old,[category]:{...old[category],[kind]:fields}};});}
+ return <details className="panel" open><summary>固定資産登録の勘定科目デフォルト</summary><p className="muted">選択中の会社に適用します。資産分類別の設定を優先し、未設定の項目は会社共通設定、標準設定の順に使用します。登録済み資産は変更しません。新規登録時に科目を個別変更することもできます。</p><form onSubmit={e=>{e.preventDefault();onSave(value);}}><div className="form-grid"><label className="field">設定対象<select value={category} onChange={e=>setCategory(e.target.value)}><option value="*">会社共通（全資産分類）</option>{categories.map(c=><option key={c.id} value={c.id}>{c.display_name??c.name}</option>)}</select></label></div>{['accounting','tax'].map(kind=><section className="book-form" key={kind}><h3>{kind==='accounting'?'会計簿':'税務簿'}</h3><div className="form-grid">{accountFields.map((field,i)=><label className="field" key={field}>{labels[i]}<select value={value[category]?.[kind]?.[field]??''} onChange={e=>change(kind,field,e.target.value)}><option value="">{category==='*'?'標準設定を使用':'会社共通設定を使用（未設定なら標準）'}</option>{accounts.map(a=><option key={a.id} value={a.code}>{a.code} {a.name}</option>)}</select></label>)}</div></section>)}<button className="primary" disabled={busy}>デフォルト設定を保存</button></form></details>;
+}
